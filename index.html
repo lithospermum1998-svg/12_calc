@@ -1,185 +1,220 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>楽天・テック12 基準価額 試算ツール</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --up: #ef4444;
-      --down: #3b82f6;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>楽天・テック12 試算ターミナル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05070c;
+    --panel: #0b1017;
+    --panel-2: #0f1520;
+    --line: #1d2836;
+    --text: #e7ecf3;
+    --muted: #5c6b80;
+    --up: #ff4757;    /* JP convention: red = up */
+    --down: #2f8bff;  /* JP convention: blue = down */
+    --down-text: #2ecc71; /* down text uses green per user preference */
+    --amber: #f2b632;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root:not([data-theme="light"]) { color-scheme: dark; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eef0f3;
+      --panel: #ffffff;
+      --panel-2: #f5f6f8;
+      --line: #d7dce2;
+      --text: #10151c;
+      --muted: #6b7684;
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      width: 100%;
-      max-width: 680px;
-      background: var(--card-bg);
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }
-    h1 {
-      font-size: 1.25rem;
-      margin-top: 0;
-      margin-bottom: 16px;
-      text-align: center;
-      color: var(--accent);
-    }
-    .section-title {
-      font-size: 0.9rem;
-      font-weight: bold;
-      margin: 16px 0 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text-muted);
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-    input {
-      background: #0f172a;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      text-align: right;
-    }
-    input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    .stock-row {
-      display: grid;
-      grid-template-columns: 1.8fr 1fr 1fr;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .stock-name {
-      font-size: 0.85rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .stock-weight {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-align: center;
-    }
-    .result-card {
-      background: #0b1120;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 20px;
-    }
-    .result-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 8px;
-      font-size: 0.9rem;
-    }
-    .result-val {
-      font-size: 1.1rem;
-      font-weight: bold;
-      font-family: monospace;
-    }
-    .highlight {
-      font-size: 1.4rem;
-      color: var(--accent);
-    }
-  </style>
+  }
+  :root[data-theme="light"] {
+    --bg: #eef0f3;
+    --panel: #ffffff;
+    --panel-2: #f5f6f8;
+    --line: #d7dce2;
+    --text: #10151c;
+    --muted: #6b7684;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 14px;
+  }
+  .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .term {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .board {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 18px 16px 20px;
+  }
+
+  h1 {
+    font-size: 1.05rem;
+    font-weight: 900;
+    margin: 0 0 2px;
+    letter-spacing: 0.01em;
+  }
+  .sub {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--amber);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.03em;
+    margin: 18px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-head span.n { color: var(--muted); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 0.68rem; color: var(--muted); }
+  input {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 9px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    text-align: right;
+    width: 100%;
+    border-radius: 2px;
+  }
+  input:focus { outline: none; border-color: var(--amber); }
+
+  .colhead {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem;
+    padding: 0 0 4px;
+  }
+  .colhead .u { color: var(--up); text-align: center; }
+  .colhead .d { color: var(--down-text); text-align: center; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .row:last-child { border-bottom: none; }
+  .tk { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.85rem; }
+  .nm { font-size: 0.66rem; color: var(--muted); display: block; margin-top: 1px; }
+  .row input { padding: 7px 6px; font-size: 0.85rem; }
+  .row input.up-in:focus { border-color: var(--up); }
+  .row input.down-in:focus { border-color: var(--down); }
+
+  .result {
+    margin-top: 22px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    padding: 16px;
+  }
+  .rline {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    padding: 5px 0;
+    color: var(--muted);
+  }
+  .rline b { color: var(--text); }
+  .divider { border: none; border-top: 1px dashed var(--line); margin: 10px 0; }
+  .hero {
+    text-align: right;
+  }
+  .hero .k { font-size: 0.7rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .hero .v {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: var(--amber);
+    text-shadow: 0 0 18px rgba(242,182,50,0.35);
+    line-height: 1.15;
+  }
+  .diffline {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+</style>
 </head>
 <body>
 
-<div class="container">
-  <h1>楽天・テック12 試算シミュレーター</h1>
+<div class="term">
+  <div class="board">
+    <h1>楽天・テック12 試算ターミナル</h1>
+    <p class="sub">非公式の簡易試算ツールです。実際の基準価額とは一致しません。各銘柄の前日比％はご自身で入力してください。</p>
 
-  <div class="section-title">1. 為替レート（TTM 仲値）</div>
-  <div class="grid">
-    <div class="form-group">
-      <label>前日 仲値 (円)</label>
-      <input type="number" id="prev-fx" step="0.01" value="143.50" oninput="calculate()">
+    <div class="section-head">為替レート(TTM仲値) <span class="n">USD/JPY</span></div>
+    <div class="grid2">
+      <div class="field"><label>前日 仲値 (円)</label><input type="number" id="prev-fx" step="0.01" value="0" oninput="calculate()"></div>
+      <div class="field"><label>当日 仲値 (円)</label><input type="number" id="curr-fx" step="0.01" value="0" oninput="calculate()"></div>
     </div>
-    <div class="form-group">
-      <label>当日 仲値 (円)</label>
-      <input type="number" id="curr-fx" step="0.01" value="144.20" oninput="calculate()">
-    </div>
-  </div>
 
-  <div class="section-title">2. 元本・信託報酬</div>
-  <div class="grid">
-    <div class="form-group">
-      <label>前日基準価額 / 保有額 (円)</label>
-      <input type="number" id="base-val" step="1" value="100000" oninput="calculate()">
+    <div class="section-head">元本・信託報酬 <span class="n">BASE</span></div>
+    <div class="grid2">
+      <div class="field"><label>前日基準価額 / 保有額 (円)</label><input type="number" id="base-val" step="1" value="100000" oninput="calculate()"></div>
+      <div class="field"><label>年信託報酬率 (%)</label><input type="number" id="expense-ratio" step="0.001" value="0.462" oninput="calculate()"></div>
     </div>
-    <div class="form-group">
-      <label>年信託報酬率 (%)</label>
-      <input type="number" id="expense-ratio" step="0.001" value="0.462" oninput="calculate()">
-    </div>
-  </div>
 
-  <div class="section-title">3. 上位7銘柄 (各比率 12.0%) 前日比％</div>
-  <div id="top-stocks"></div>
+    <div class="section-head">上位7銘柄 <span class="n">各 12.0%</span></div>
+    <div class="colhead"><span></span><span class="u">上昇 %</span><span class="d">下落 %</span></div>
+    <div id="top-stocks"></div>
 
-  <div class="section-title">4. 下位5銘柄 (各比率 3.2%) 前日比％</div>
-  <div id="sub-stocks"></div>
+    <div class="section-head">下位5銘柄 <span class="n">各 3.2%</span></div>
+    <div class="colhead"><span></span><span class="u">上昇 %</span><span class="d">下落 %</span></div>
+    <div id="sub-stocks"></div>
 
-  <div class="result-card">
-    <div class="result-row">
-      <span>株価加重平均 (ドル建て)</span>
-      <span class="result-val" id="res-stocks">0.00%</span>
-    </div>
-    <div class="result-row">
-      <span>為替変動率</span>
-      <span class="result-val" id="res-fx">0.00%</span>
-    </div>
-    <div class="result-row">
-      <span>総合予想変動率 (概算)</span>
-      <span class="result-val" id="res-total">0.00%</span>
-    </div>
-    <hr style="border: none; border-top: 1px solid var(--border); margin: 10px 0;">
-    <div class="result-row">
-      <span>今夜の予想評価額</span>
-      <span class="result-val highlight" id="res-eval">100,000 円</span>
-    </div>
-    <div class="result-row" style="margin-bottom:0;">
-      <span>予想損益</span>
-      <span class="result-val" id="res-diff">±0 円</span>
+    <div class="result">
+      <div class="rline"><span>株価加重平均(ドル建て)</span><b class="num" id="res-stocks">0.00%</b></div>
+      <div class="rline"><span>為替変動率</span><b class="num" id="res-fx">0.00%</b></div>
+      <div class="rline"><span>総合予想変動率(概算)</span><b class="num" id="res-total">0.00%</b></div>
+      <hr class="divider">
+      <div class="hero">
+        <div class="k">今夜の予想評価額</div>
+        <div class="v" id="res-eval">100,000<span style="font-size:1rem;">円</span></div>
+      </div>
+      <div class="diffline"><span style="color:var(--muted)">予想損益</span><b class="num" id="res-diff">±0 円</b></div>
     </div>
   </div>
 </div>
 
 <script>
-  // 上位7銘柄（12%）
   const topStocks = [
     { ticker: "AAPL", name: "アップル" },
     { ticker: "MSFT", name: "マイクロソフト" },
@@ -189,8 +224,6 @@
     { ticker: "AVGO", name: "ブロードコム" },
     { ticker: "SPCX", name: "スペースX" }
   ];
-
-  // 下位5銘柄（3.2%）
   const subStocks = [
     { ticker: "TSLA", name: "テスラ" },
     { ticker: "AMD", name: "AMD" },
@@ -200,82 +233,77 @@
   ];
 
   function renderStockInputs() {
-    const topContainer = document.getElementById("top-stocks");
-    topStocks.forEach((s, idx) => {
-      topContainer.innerHTML += `
-        <div class="stock-row">
-          <div class="stock-name"><b>${s.ticker}</b> <span style="color:#64748b;">${s.name}</span></div>
-          <div class="stock-weight">12.0%</div>
-          <input type="number" class="stock-input top-stock-val" step="0.01" value="0.00" oninput="calculate()">
-        </div>
-      `;
+    const topC = document.getElementById("top-stocks");
+    topStocks.forEach(s => {
+      topC.innerHTML += `
+        <div class="row">
+          <div><span class="tk">${s.ticker}</span><span class="nm">${s.name} ・ 12.0%</span></div>
+          <input type="number" inputmode="decimal" min="0" class="stock-input up-in top-stock-up" step="0.01" placeholder="0.00" oninput="calculate()">
+          <input type="number" inputmode="decimal" min="0" class="stock-input down-in top-stock-down" step="0.01" placeholder="0.00" oninput="calculate()">
+        </div>`;
     });
-
-    const subContainer = document.getElementById("sub-stocks");
-    subStocks.forEach((s, idx) => {
-      subContainer.innerHTML += `
-        <div class="stock-row">
-          <div class="stock-name"><b>${s.ticker}</b> <span style="color:#64748b;">${s.name}</span></div>
-          <div class="stock-weight">3.2%</div>
-          <input type="number" class="stock-input sub-stock-val" step="0.01" value="0.00" oninput="calculate()">
-        </div>
-      `;
+    const subC = document.getElementById("sub-stocks");
+    subStocks.forEach(s => {
+      subC.innerHTML += `
+        <div class="row">
+          <div><span class="tk">${s.ticker}</span><span class="nm">${s.name} ・ 3.2%</span></div>
+          <input type="number" inputmode="decimal" min="0" class="stock-input up-in sub-stock-up" step="0.01" placeholder="0.00" oninput="calculate()">
+          <input type="number" inputmode="decimal" min="0" class="stock-input down-in sub-stock-down" step="0.01" placeholder="0.00" oninput="calculate()">
+        </div>`;
     });
   }
 
   function calculate() {
-    // 1. 為替変動率
     const prevFx = parseFloat(document.getElementById("prev-fx").value) || 0;
     const currFx = parseFloat(document.getElementById("curr-fx").value) || 0;
     const fxReturn = prevFx > 0 ? (currFx - prevFx) / prevFx : 0;
 
-    // 2. 株価リターン（ドル建て加重平均）
     let stockReturn = 0;
-    document.querySelectorAll(".top-stock-val").forEach(input => {
-      const val = parseFloat(input.value) || 0;
-      stockReturn += (val / 100) * 0.12;
-    });
-    document.querySelectorAll(".sub-stock-val").forEach(input => {
-      const val = parseFloat(input.value) || 0;
-      stockReturn += (val / 100) * 0.032;
-    });
+    let topNet = 0, subNet = 0;
+    document.querySelectorAll(".top-stock-up").forEach(i => topNet += parseFloat(i.value) || 0);
+    document.querySelectorAll(".top-stock-down").forEach(i => topNet -= parseFloat(i.value) || 0);
+    document.querySelectorAll(".sub-stock-up").forEach(i => subNet += parseFloat(i.value) || 0);
+    document.querySelectorAll(".sub-stock-down").forEach(i => subNet -= parseFloat(i.value) || 0);
+    stockReturn += (topNet / 100) * 0.12;
+    stockReturn += (subNet / 100) * 0.032;
 
-    // 3. 信託報酬控除（日割り）
     const expenseRatio = parseFloat(document.getElementById("expense-ratio").value) || 0;
     const dailyFee = (expenseRatio / 100) / 365;
 
-    // 4. 総合変動率
     const totalReturn = ((1 + stockReturn) * (1 + fxReturn) - 1) - dailyFee;
 
-    // 5. 評価額計算
     const baseVal = parseFloat(document.getElementById("base-val").value) || 0;
     const estimatedVal = baseVal * (1 + totalReturn);
     const diffVal = estimatedVal - baseVal;
 
-    // 結果表示
     formatSpan("res-stocks", stockReturn * 100, "%");
     formatSpan("res-fx", fxReturn * 100, "%");
     formatSpan("res-total", totalReturn * 100, "%");
 
-    document.getElementById("res-eval").innerText = Math.round(estimatedVal).toLocaleString() + " 円";
-    
+    document.getElementById("res-eval").innerHTML = Math.round(estimatedVal).toLocaleString() + '<span style="font-size:1rem;">円</span>';
+    document.getElementById("res-eval").style.color = diffVal > 0 ? "var(--up)" : (diffVal < 0 ? "var(--down-text)" : "var(--amber)");
     const diffEl = document.getElementById("res-diff");
-    const diffSign = diffVal > 0 ? "+" : "";
-    diffEl.innerText = diffSign + Math.round(diffVal).toLocaleString() + " 円";
-    diffEl.style.color = diffVal >= 0 ? "#ef4444" : "#3b82f6";
+    const sign = diffVal > 0 ? "+" : "";
+    diffEl.innerText = sign + Math.round(diffVal).toLocaleString() + " 円";
+    diffEl.style.color = diffVal > 0 ? "var(--up)" : (diffVal < 0 ? "var(--down-text)" : "var(--muted)");
   }
 
   function formatSpan(id, val, suffix) {
     const el = document.getElementById(id);
     const sign = val > 0 ? "+" : "";
     el.innerText = sign + val.toFixed(2) + suffix;
-    el.style.color = val >= 0 ? "#ef4444" : "#3b82f6";
+    el.style.color = val > 0 ? "var(--up)" : (val < 0 ? "var(--down-text)" : "var(--muted)");
   }
 
-  window.onload = () => {
-    renderStockInputs();
-    calculate();
-  };
+  function enableTapToType() {
+    document.querySelectorAll('input').forEach(el => {
+      el.addEventListener('focus', () => el.select());
+      // iOS Safari can ignore select() on the first tap; a zero-delay retry fixes it
+      el.addEventListener('touchend', () => setTimeout(() => el.select(), 0));
+    });
+  }
+
+  window.onload = () => { renderStockInputs(); calculate(); enableTapToType(); };
 </script>
 </body>
 </html>
