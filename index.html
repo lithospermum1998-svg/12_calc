@@ -102,7 +102,7 @@
     color: var(--text);
     padding: 9px 10px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.95rem;
+    font-size: 16px;
     text-align: right;
     width: 100%;
     border-radius: 2px;
@@ -131,7 +131,8 @@
   .row:last-child { border-bottom: none; }
   .tk { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.85rem; }
   .nm { font-size: 0.66rem; color: var(--muted); display: block; margin-top: 1px; }
-  .row input { padding: 7px 6px; font-size: 0.85rem; }
+  .ct { display: block; font-size: 0.68rem; margin-top: 3px; color: var(--muted); }
+  .row input { padding: 7px 6px; font-size: 16px; }
   .row input.up-in:focus { border-color: var(--up); }
   .row input.down-in:focus { border-color: var(--down); }
 
@@ -236,8 +237,8 @@
     const topC = document.getElementById("top-stocks");
     topStocks.forEach(s => {
       topC.innerHTML += `
-        <div class="row">
-          <div><span class="tk">${s.ticker}</span><span class="nm">${s.name} ・ 12.0%</span></div>
+        <div class="row" data-w="0.12">
+          <div><span class="tk">${s.ticker}</span><span class="nm">${s.name} ・ 12.0%</span><span class="ct num">寄与 0.000%</span></div>
           <input type="number" inputmode="decimal" min="0" class="stock-input up-in top-stock-up" step="0.01" placeholder="0.00" oninput="calculate()">
           <input type="number" inputmode="decimal" min="0" class="stock-input down-in top-stock-down" step="0.01" placeholder="0.00" oninput="calculate()">
         </div>`;
@@ -245,8 +246,8 @@
     const subC = document.getElementById("sub-stocks");
     subStocks.forEach(s => {
       subC.innerHTML += `
-        <div class="row">
-          <div><span class="tk">${s.ticker}</span><span class="nm">${s.name} ・ 3.2%</span></div>
+        <div class="row" data-w="0.032">
+          <div><span class="tk">${s.ticker}</span><span class="nm">${s.name} ・ 3.2%</span><span class="ct num">寄与 0.000%</span></div>
           <input type="number" inputmode="decimal" min="0" class="stock-input up-in sub-stock-up" step="0.01" placeholder="0.00" oninput="calculate()">
           <input type="number" inputmode="decimal" min="0" class="stock-input down-in sub-stock-down" step="0.01" placeholder="0.00" oninput="calculate()">
         </div>`;
@@ -259,13 +260,16 @@
     const fxReturn = prevFx > 0 ? (currFx - prevFx) / prevFx : 0;
 
     let stockReturn = 0;
-    let topNet = 0, subNet = 0;
-    document.querySelectorAll(".top-stock-up").forEach(i => topNet += parseFloat(i.value) || 0);
-    document.querySelectorAll(".top-stock-down").forEach(i => topNet -= parseFloat(i.value) || 0);
-    document.querySelectorAll(".sub-stock-up").forEach(i => subNet += parseFloat(i.value) || 0);
-    document.querySelectorAll(".sub-stock-down").forEach(i => subNet -= parseFloat(i.value) || 0);
-    stockReturn += (topNet / 100) * 0.12;
-    stockReturn += (subNet / 100) * 0.032;
+    document.querySelectorAll(".row[data-w]").forEach(row => {
+      const up = parseFloat(row.querySelector(".up-in").value) || 0;
+      const down = parseFloat(row.querySelector(".down-in").value) || 0;
+      const contrib = ((up - down) / 100) * parseFloat(row.dataset.w);
+      stockReturn += contrib;
+      const ct = row.querySelector(".ct");
+      const pct = contrib * 100;
+      ct.innerText = "寄与 " + (pct > 0 ? "+" : "") + pct.toFixed(3) + "%";
+      ct.style.color = pct > 0 ? "var(--up)" : (pct < 0 ? "var(--down-text)" : "var(--muted)");
+    });
 
     const expenseRatio = parseFloat(document.getElementById("expense-ratio").value) || 0;
     const dailyFee = (expenseRatio / 100) / 365;
@@ -284,7 +288,7 @@
     document.getElementById("res-eval").style.color = diffVal > 0 ? "var(--up)" : (diffVal < 0 ? "var(--down-text)" : "var(--amber)");
     const diffEl = document.getElementById("res-diff");
     const sign = diffVal > 0 ? "+" : "";
-    diffEl.innerText = sign + Math.round(diffVal).toLocaleString() + " 円";
+    diffEl.innerText = sign + Math.round(diffVal).toLocaleString() + " 円 (" + sign + (totalReturn * 100).toFixed(2) + "%)";
     diffEl.style.color = diffVal > 0 ? "var(--up)" : (diffVal < 0 ? "var(--down-text)" : "var(--muted)");
   }
 
